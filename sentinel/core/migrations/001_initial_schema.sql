@@ -229,3 +229,21 @@ CREATE TRIGGER agent_run_steps_update_updated_at
 BEFORE UPDATE ON agent_run_steps
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
+
+CREATE OR REPLACE FUNCTION increment_run_totals()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE agent_runs
+    SET
+        total_prompt_tokens     = total_prompt_tokens + NEW.prompt_tokens,
+        total_completion_tokens = total_completion_tokens + NEW.completion_tokens,
+        total_llm_cost_usd      = total_llm_cost_usd + NEW.cost_usd
+    WHERE run_id = NEW.run_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER agent_run_steps_increment_totals
+AFTER INSERT ON agent_run_steps
+FOR EACH ROW
+EXECUTE FUNCTION increment_run_totals();
