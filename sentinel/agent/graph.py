@@ -1,10 +1,10 @@
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.postgres import PostgresSaver
 from sentinel.agent.state import AgentState
+from sentinel.agent.tools_registry import ToolRegistry
 from sentinel.agent.nodes.ingest import ingest_log
 from sentinel.agent.nodes.classify import classify_severity, route_severity
-from sentinel.agent.nodes.investigate import (
-    auto_close, search_runbook, check_metrics, query_past_incidents
-)
+from sentinel.agent.nodes.investigate import make_investigate_nodes
 from sentinel.agent.nodes.reflect import reflect, route_reflection
 from sentinel.agent.nodes.verdict import generate_verdict
 from sentinel.agent.nodes.hitl import (
@@ -13,16 +13,17 @@ from sentinel.agent.nodes.hitl import (
     auto_escalate, close_unreviewed
 )
 
-def build_graph() -> StateGraph:
-    workflow = StateGraph(AgentState)
 
-    # register nodes
+def build_graph(registry: ToolRegistry) -> StateGraph:
+    workflow = StateGraph(AgentState)
+    nodes = make_investigate_nodes(registry)
+
     workflow.add_node("ingest_log", ingest_log)
     workflow.add_node("classify_severity", classify_severity)
-    workflow.add_node("auto_close", auto_close)
-    workflow.add_node("search_runbook", search_runbook)
-    workflow.add_node("check_metrics", check_metrics)
-    workflow.add_node("query_past_incidents", query_past_incidents)
+    workflow.add_node("auto_close", nodes["auto_close"])
+    workflow.add_node("search_runbook", nodes["search_runbook"])
+    workflow.add_node("check_metrics", nodes["check_metrics"])
+    workflow.add_node("query_past_incidents", nodes["query_past_incidents"])
     workflow.add_node("reflect", reflect)
     workflow.add_node("generate_verdict", generate_verdict)
     workflow.add_node("hitl_checkpoint", hitl_checkpoint)
@@ -31,7 +32,6 @@ def build_graph() -> StateGraph:
     workflow.add_node("auto_escalate", auto_escalate)
     workflow.add_node("close_unreviewed", close_unreviewed)
 
-    # edges
     workflow.set_entry_point("ingest_log")
     workflow.add_edge("ingest_log", "classify_severity")
     workflow.add_conditional_edges(
@@ -63,5 +63,6 @@ def build_graph() -> StateGraph:
 
     return workflow
 
-checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
-app = build_graph().compile(checkpointer=checkpointer)
+# app instantiated at startup in core/config.py
+# checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
+# app = build_graph(registry).compile(checkpointer=checkpointer)
