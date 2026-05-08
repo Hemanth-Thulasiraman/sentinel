@@ -1,0 +1,34 @@
+# API
+fastapi==0.115.5
+uvicorn==0.32.1
+pydantic==2.10.3
+
+# Agent
+langgraph==0.2.60
+langchain-core==0.3.25
+anthropic==0.40.0
+openai==1.58.1
+cohere==5.13.0
+
+# Database
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+
+# HTTP
+httpx==0.27.2
+
+# ML
+xgboost==3.2.0
+scikit-learn==1.6.0
+joblib==1.4.2
+numpy==2.3.5
+pandas==2.3.3
+
+# Queue
+redis==5.2.1
+
+# Monitoring
+langsmith==0.2.3
+
+# Utils
+python-dotenv==1.0.1
